@@ -1,4 +1,4 @@
 ImageScraper
 ============
 
-An imagescraper for the Zeus wiki.
+Downloads all the images from the Zeus wiki
