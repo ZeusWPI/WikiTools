@@ -15,9 +15,9 @@ class IndexPageParser(HTMLParser):
     # Find the titles of the wiki pages
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
-            if len(attrs) == 2
-            and attrs[0][0] == 'href'
-            and attrs[1][0] == 'title':
+            if (len(attrs) == 2 and
+               attrs[0][0] == 'href' and
+               attrs[1][0] == 'title'):
                 self.titles.append(attrs[1][1])
 
 
@@ -104,9 +104,7 @@ def get_images(titles):
         # Escape the title so we can create a valid link
         title = titles[current_title].replace('\'', '%27').replace(' ', '%20')
         try:
-            page = urlopen(SOURCE_LOCATION % title)
-            .read()
-            .decode(ENCODING)
+            page = urlopen(SOURCE_LOCATION % title).read().decode(ENCODING)
         except:
             print("\tServer's being lazy, retrying...")
             continue
@@ -115,10 +113,10 @@ def get_images(titles):
             current_title += 1
             continue
         # Ignore redirects
-        if search('#DOORVERWIJZING', page, I | M) is not None or
-        search('#REDIRECT.*', page, I | M) is not None:
+        if (search('#DOORVERWIJZING', page, I | M) is not None or
+           search('#REDIRECT.*', page, I | M) is not None):
             print('\tSkipping redirecting page %s' % titles[current_title])
-            current_title += 1
+            urrent_title += 1
             continue
         imagelinks = []
         parser = ImageLocater(imagelinks)
