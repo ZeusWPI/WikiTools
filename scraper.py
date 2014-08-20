@@ -2,7 +2,7 @@ from urllib.request import urlopen
 from urllib.error import URLError
 from html.parser import HTMLParser
 from os import fsync, path, makedirs
-from datetime import date
+from time import strftime
 from re import M, I, findall, search, compile
 
 
@@ -17,7 +17,8 @@ class IndexPageParser(HTMLParser):
         if tag == 'a':
             if (len(attrs) == 2 and
                attrs[0][0] == 'href' and
-               attrs[1][0] == 'title'):
+               attrs[1][0] == 'title' and
+               attrs[1][1] != KEYWORD):
                 self.titles.append(attrs[1][1])
 
 
@@ -56,92 +57,90 @@ class ImageLocater(HTMLParser):
 INDEX_PAGE = 'http://zeus.ugent.be/wiki/Speciaal:AllePaginas'
 SOURCE_LOCATION = 'http://zeus.ugent.be/wiki/index.php?title=%s&action=edit'
 IMAGE_PATH = 'assets/'
-KEYWORD = '/wiki/Speciaal:AllePaginas'
+KEYWORD = 'Speciaal:AllePaginas'
 ENCODING = 'iso-8859_15'
 
+titles_length = 0
+log_file = 0
 
-def get_pages():
+def get_titles():
+    global titles_length
+
     # Download the index page containing hyperlinks to the other wiki pages
     print('Fetching source...')
     try:
         html = urlopen(INDEX_PAGE).read().decode(ENCODING)
     except:
-        print("Unexpected exception while getting the indexpaga!")
+        print("Unexpected exception while getting the indexpage!")
         exit(1)
     if not html:
         print('Failed to fetch source!')
         exit(2)
     print('Source has been fetched!')
 
-    # Narrow down the HTML
-    html = str(html).split(KEYWORD)
     titles = []
 
-    # Now find the titles in the narrowed down HTML
+    # Now find the pages in the HTML
     parser = IndexPageParser(titles)
-    parser.feed(html[1])
-    # Never forget to close
-    parser.close()
+    parser.feed(html)
 
-    create_directory()
-    get_images(titles)
-
-
-def create_directory():
-    if not path.exists(IMAGE_PATH):
-        makedirs(IMAGE_PATH)
-
-
-def get_images(titles):
-    h = HTMLParser()
-    current_title = 0
-    log_file = open(date.today()
-                    .strftime('%Y-%m-%d %I-%M-%S%p') + '.log', 'wb')
     titles_length = len(titles)
-    while current_title < titles_length:
-        print('Fetching images from %s... (%s/%s)' %
-              (titles[current_title], current_title + 1, titles_length))
-        # Escape the title so we can create a valid link
-        title = titles[current_title].replace('\'', '%27').replace(' ', '%20')
+    return titles
+
+
+def get_images(current_title, title):
+    h = HTMLParser()
+    print('Fetching images from %s... (%s/%s)' %
+          (title, current_title + 1, titles_length))
+    # Escape the title so we can create a valid link
+    title = title.replace('\'', '%27').replace(' ', '%20')
+    # Repition is succes
+    while True:
         try:
             page = urlopen(SOURCE_LOCATION % title).read().decode(ENCODING)
         except:
             print("\tServer's being lazy, retrying...")
             continue
-        if not page:
-            print('\tFailed to get %s\'s images!' % titles[current_title])
-            current_title += 1
-            continue
-        # Ignore redirects
-        if (search('#DOORVERWIJZING', page, I | M) is not None or
-           search('#REDIRECT.*', page, I | M) is not None):
-            print('\tSkipping redirecting page %s' % titles[current_title])
-            urrent_title += 1
-            continue
-        imagelinks = []
-        parser = ImageLocater(imagelinks)
+        break
 
-        page = h.unescape(page)
+    if not page:
+        print('\tFailed to get %s\'s images!' % title)
+        return
+    # Ignore redirects
+    if (search('#DOORVERWIJZING', page, I | M) is not None or
+       search('#REDIRECT.*', page, I | M) is not None):
+        print('\tSkipping redirecting page %s' % title)
+        return
+    imagelinks = []
+    parser = ImageLocater(imagelinks)
+
+    page = h.unescape(page)
+
+    try:
         parser.feed(page)
-        parser.close()
+    except:
+        print('%s is a malformatted page' % title)
+        return []
 
-        if imagelinks:
-            # Log the title of the page
-            log_file.write(bytes('%s\n' % title, ENCODING))
-            for image_url in imagelinks:
-                # Log the image url
-                log_file.write(bytes('\t%s' % image_url, ENCODING))
-                if not save_image(image_url):
-                    log_file.write(bytes(' DEAD', ENCODING))
-                log_file.write(bytes('\n', ENCODING))
-            # Actually print something
-            log_file.flush()
-            fsync(log_file.fileno())
-        current_title += 1
-    log_file.close()
+    return imagelinks
 
 
-def save_image(image_url):
+def save_image(title, image_url):
+    # Log the title of the page
+    log_file.write(bytes('%s\n' % title, ENCODING))
+    # Log the image url
+    log_file.write(bytes('\t%s' % image_url, ENCODING))
+
+    if not fetch_image(image_url):
+        log_file.write(bytes(' DEAD', ENCODING))
+    log_file.write(bytes('\n', ENCODING))
+
+    # Actually print something
+    log_file.flush()
+    fsync(log_file.fileno())
+
+
+def fetch_image(image_url):
     if not path.exists(IMAGE_PATH + image_url.split('/')[-1]):
         try:
             image = urlopen(image_url)
@@ -153,5 +152,26 @@ def save_image(image_url):
             return False
     return True
 
+
+def init():
+    global log_file
+    # Create the log_file
+    log_file = open(strftime('%Y-%m-%d %H:%M:%S') + '.log', 'wb')
+    # Create a directory for saving the images if needed
+    if not path.exists(IMAGE_PATH):
+        makedirs(IMAGE_PATH)
+
+
+def main():
+    for index, title in enumerate(get_titles()):
+        for image in get_images(index, title):
+            save_image(title, image)
+
+
+def cleanup():
+    log_file.close()
+
 if __name__ == '__main__':
-    get_pages()
+    init()
+    main()
+    cleanup()
