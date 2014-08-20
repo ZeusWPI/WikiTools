@@ -1,8 +1,8 @@
 from urllib.request import urlopen
 from urllib.error import URLError
 from html.parser import HTMLParser
-from os import fsync, path, makedirs
 from time import strftime
+from os import fsync, path, makedirs
 from re import M, I, findall, search, compile
 
 
@@ -63,6 +63,7 @@ ENCODING = 'iso-8859_15'
 titles_length = 0
 log_file = 0
 
+
 def get_titles():
     global titles_length
 
@@ -70,7 +71,7 @@ def get_titles():
     print('Fetching source...')
     try:
         html = urlopen(INDEX_PAGE).read().decode(ENCODING)
-    except:
+    except IOError:
         print("Unexpected exception while getting the indexpage!")
         exit(1)
     if not html:
@@ -98,7 +99,7 @@ def get_images(current_title, title):
     while True:
         try:
             page = urlopen(SOURCE_LOCATION % title).read().decode(ENCODING)
-        except:
+        except IOError:
             print("\tServer's being lazy, retrying...")
             continue
         break
