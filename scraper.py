@@ -1,9 +1,9 @@
-from urllib.request import urlopen
-from urllib.error import URLError
 from html.parser import HTMLParser
-from time import strftime
 from os import fsync, path, makedirs
 from re import M, I, findall, search, compile
+from time import strftime
+from urllib.error import URLError
+from urllib.request import urlopen
 
 
 # This class parses the index page which contains hyperlinks to the wiki pages
@@ -16,9 +16,9 @@ class IndexPageParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
             if (len(attrs) == 2 and
-               attrs[0][0] == 'href' and
-               attrs[1][0] == 'title' and
-               attrs[1][1] != KEYWORD):
+                    attrs[0][0] == 'href' and
+                    attrs[1][0] == 'title' and
+                    attrs[1][1] != KEYWORD):
                 self.titles.append(attrs[1][1])
 
 
@@ -102,7 +102,7 @@ def get_images(current_title, title, titles_length):
         return
     # Ignore redirects
     if (search('#DOORVERWIJZING', page, I | M) is not None or
-       search('#REDIRECT.*', page, I | M) is not None):
+            search('#REDIRECT.*', page, I | M) is not None):
         print('\tSkipping redirecting page %s' % title)
         return
     imagelinks = []
@@ -152,16 +152,12 @@ def init():
 
 
 def main():
-    # Create the log_file
-    log_file = open(strftime('%Y-%m-%d %H:%M:%S') + '.log', 'w',
-                    encoding=ENCODING)
-
-    titles = get_titles()
-    for index, title in enumerate(titles):
-        for image in get_images(index, title, len(titles)):
-            save_image(title, image, log_file)
-
-    log_file.close()
+    log_file_name = strftime('%Y-%m-%d %H:%M:%S') + '.log'
+    with open(log_file_name, 'w', encoding=ENCODING) as log_file:
+        titles = get_titles()
+        for index, title in enumerate(titles):
+            for image in get_images(index, title, len(titles)):
+                save_image(title, image, log_file)
 
 
 if __name__ == '__main__':
