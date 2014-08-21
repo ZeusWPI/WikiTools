@@ -121,13 +121,11 @@ def get_images(current_title, title, titles_length):
 
 def save_image(title, image_url, log_file):
     # Log the title of the page
-    log_file.write(bytes('%s\n' % title, ENCODING))
-    # Log the image url
-    log_file.write(bytes('\t%s' % image_url, ENCODING))
+    print(title, file=log_file)
 
-    if not fetch_image(image_url):
-        log_file.write(bytes(' DEAD', ENCODING))
-    log_file.write(bytes('\n', ENCODING))
+    # Log the image url
+    url_log = image_url if fetch_image(image_url) else image_url + ' DEAD'
+    print('\t%s' % url_log, file=log_file)
 
     # Actually print something
     log_file.flush()
@@ -155,7 +153,8 @@ def init():
 
 def main():
     # Create the log_file
-    log_file = open(strftime('%Y-%m-%d %H:%M:%S') + '.log', 'wb')
+    log_file = open(strftime('%Y-%m-%d %H:%M:%S') + '.log', 'w',
+                    encoding=ENCODING)
 
     titles = get_titles()
     for index, title in enumerate(titles):
