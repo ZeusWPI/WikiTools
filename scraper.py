@@ -60,13 +60,8 @@ IMAGE_PATH = 'assets/'
 KEYWORD = 'Speciaal:AllePaginas'
 ENCODING = 'iso-8859_15'
 
-titles_length = 0
-log_file = 0
-
 
 def get_titles():
-    global titles_length
-
     # Download the index page containing hyperlinks to the other wiki pages
     print('Fetching source...')
     try:
@@ -85,11 +80,10 @@ def get_titles():
     parser = IndexPageParser(titles)
     parser.feed(html)
 
-    titles_length = len(titles)
     return titles
 
 
-def get_images(current_title, title):
+def get_images(current_title, title, titles_length):
     h = HTMLParser()
     print('Fetching images from %s... (%s/%s)' %
           (title, current_title + 1, titles_length))
@@ -99,10 +93,9 @@ def get_images(current_title, title):
     while True:
         try:
             page = urlopen(SOURCE_LOCATION % title).read().decode(ENCODING)
+            break
         except IOError:
             print("\tServer's being lazy, retrying...")
-            continue
-        break
 
     if not page:
         print('\tFailed to get %s\'s images!' % title)
@@ -126,7 +119,7 @@ def get_images(current_title, title):
     return imagelinks
 
 
-def save_image(title, image_url):
+def save_image(title, image_url, log_file):
     # Log the title of the page
     log_file.write(bytes('%s\n' % title, ENCODING))
     # Log the image url
@@ -155,24 +148,23 @@ def fetch_image(image_url):
 
 
 def init():
-    global log_file
-    # Create the log_file
-    log_file = open(strftime('%Y-%m-%d %H:%M:%S') + '.log', 'wb')
     # Create a directory for saving the images if needed
     if not path.exists(IMAGE_PATH):
         makedirs(IMAGE_PATH)
 
 
 def main():
-    for index, title in enumerate(get_titles()):
-        for image in get_images(index, title):
-            save_image(title, image)
+    # Create the log_file
+    log_file = open(strftime('%Y-%m-%d %H:%M:%S') + '.log', 'wb')
 
+    titles = get_titles()
+    for index, title in enumerate(titles):
+        for image in get_images(index, title, len(titles)):
+            save_image(title, image, log_file)
 
-def cleanup():
     log_file.close()
+
 
 if __name__ == '__main__':
     init()
     main()
-    cleanup()
