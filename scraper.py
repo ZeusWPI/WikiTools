@@ -67,7 +67,7 @@ def get_titles():
     try:
         html = urlopen(INDEX_PAGE).read().decode(ENCODING)
     except IOError:
-        print("Unexpected exception while getting the indexpage!")
+        print("IOError while getting the indexpage!")
         exit(1)
     if not html:
         print('Failed to fetch source!')
