@@ -15,11 +15,11 @@ class IndexPageParser(HTMLParser):
     # Find the titles of the wiki pages
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
-            if (len(attrs) == 2 and
+            if (len(attrs) == 3 and
                     attrs[0][0] == 'href' and
-                    attrs[1][0] == 'title' and
+                    attrs[2][0] == 'title' and
                     attrs[1][1] != KEYWORD):
-                self.titles.append(attrs[1][1])
+                self.titles.append(attrs[2][1])
 
 
 class ImageLocater(HTMLParser):
@@ -29,7 +29,7 @@ class ImageLocater(HTMLParser):
         self.found = False
         self.data = ''
         # The regex to look for external image links in usercreated source code
-        self.pattern = compile(r'\b((?:https?|ftp).*\.(?:png|jpe?g|gif|bmp))$',
+        self.pattern = compile(r'\b((?:https?|ftp).*\.(?:png|jpe?g|gif|bmp))',
                                M | I)
 
     # Look for the textarea in the html page
@@ -54,10 +54,10 @@ class ImageLocater(HTMLParser):
                     self.imagelinks.append(link)
             self.found = False
 
-INDEX_PAGE = 'http://zeus.ugent.be/wiki/Speciaal:AllePaginas'
-SOURCE_LOCATION = 'http://zeus.ugent.be/wiki/index.php?title=%s&action=edit'
+INDEX_PAGE = 'https://zeus.ugent.be/wiki/doku.php?id=Hoofdpagina&do=index'
+SOURCE_LOCATION = 'http://zeus.ugent.be/wiki/doku.php?id=%s&do=edit'
 IMAGE_PATH = 'assets/'
-KEYWORD = 'Speciaal:AllePaginas'
+KEYWORD = 'Index'
 ENCODING = 'iso-8859_15'
 
 
@@ -88,7 +88,7 @@ def get_images(current_title, title, titles_length):
     print('Fetching images from %s... (%s/%s)' %
           (title, current_title + 1, titles_length))
     # Escape the title so we can create a valid link
-    title = title.replace('\'', '%27').replace(' ', '%20')
+    #title = title.replace('\'', '%27').replace(' ', '%20')
     # Repition is succes
     while True:
         try:
@@ -99,12 +99,12 @@ def get_images(current_title, title, titles_length):
 
     if not page:
         print('\tFailed to get %s\'s images!' % title)
-        return
+        return []
     # Ignore redirects
     if (search('#DOORVERWIJZING', page, I | M) is not None or
             search('#REDIRECT.*', page, I | M) is not None):
         print('\tSkipping redirecting page %s' % title)
-        return
+        return []
     imagelinks = []
     parser = ImageLocater(imagelinks)
 
