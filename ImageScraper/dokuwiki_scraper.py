@@ -23,8 +23,6 @@ def list_all_pages():
             filepath = path.join(root, filename)
             page_paths.append(filepath)
 
-    print(page_paths)
-
     return page_paths
 
 
