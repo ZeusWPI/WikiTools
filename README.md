@@ -1,4 +1,4 @@
-ImageScraper
+WikiTools
 ============
 
-Downloads all the images from the Zeus wiki
+Tools to convert Mediawiki into dokuwiki
