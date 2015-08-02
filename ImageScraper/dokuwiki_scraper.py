@@ -1,7 +1,8 @@
 from urllib.error import URLError
 from urllib.request import urlopen
 from os import path, makedirs, walk
-from re import M, I, findall, compile, sub
+from re import M, I, findall, compile
+from glob import glob
 
 DATA_DIRECTORY = 'data'
 MEDIA_DIRECTORY = '/media/'
@@ -15,7 +16,9 @@ def list_all_pages():
 
     # Walk the tree.
     for root, directories, files in walk(DATA_DIRECTORY + PAGE_DIRECTORY):
-        print(files)
+        if 'pages/wiki' in root or 'pages/wikizeus' in root:
+            continue  # skip these directories
+
         for filename in files:
             filepath = path.join(root, filename)
             page_paths.append(filepath)
@@ -56,6 +59,17 @@ def fetch_and_write_image(image_url, image_save_path):
     return True
 
 
+def test_if_images_already_exist_for_page(name):
+    image_path = str(DATA_DIRECTORY + MEDIA_DIRECTORY + MEDIA_SUBDIRECTORY + '/' + name + '*')
+    number = 0
+    for name in glob(image_path):
+        print(name.split('-')[-1].split('.')[0])
+        new_number = int(name.split('-')[-1].split('.')[0])
+        number = max(number, new_number)
+    print(number)
+    return number
+
+
 def handle_pages():
     page_list = list_all_pages()
 
@@ -66,8 +80,9 @@ def handle_pages():
             page_data = str(page_file.read())
             modified = False
             imagelinks = find_imagelinks_in_page(page_data)
+            start = test_if_images_already_exist_for_page(name)
             for count, image in enumerate(imagelinks):
-                image_name = '%s-%d.%s' % (name, count+1, image.split('.')[-1])
+                image_name = '%s-%d.%s' % (name, count+1+start, image.split('.')[-1])
                 if fetch_and_write_image(image, image_name):
                     page_data = page_data.replace(image, MEDIA_SUBDIRECTORY + ':' + image_name)
                     modified = True
@@ -81,6 +96,3 @@ def handle_pages():
 
 if __name__ == '__main__':
     handle_pages()
-
-
-
