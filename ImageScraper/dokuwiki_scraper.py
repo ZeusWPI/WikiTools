@@ -63,10 +63,8 @@ def test_if_images_already_exist_for_page(name):
     image_path = str(DATA_DIRECTORY + MEDIA_DIRECTORY + MEDIA_SUBDIRECTORY + '/' + name + '*')
     number = 0
     for name in glob(image_path):
-        print(name.split('-')[-1].split('.')[0])
         new_number = int(name.split('-')[-1].split('.')[0])
         number = max(number, new_number)
-    print(number)
     return number
 
 
